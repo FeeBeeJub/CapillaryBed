@@ -49,6 +49,7 @@ class PivotPIServoThread(threading.Thread):
         return ret
     def stopServo(self):
         self._continue = False
+        self._cb.flush()
     def minPos(self):
         papMap = self.getPositionsAndPauses()
         self._ppilock.acquire()
@@ -90,6 +91,8 @@ class PivotPIServoThread(threading.Thread):
         while self._continue:
             self._cb.await()
             self.minPos()
+            if not self._continue:   
+                break
             self._cb.await()
             self.maxPos()
         
