@@ -8,8 +8,10 @@ Created on Mar 22, 2018
 import threading
 import pivotpi_servo
 import pivotpi
+import cyclic_barrier
 
 numServos = 2
+cb = cyclic_barrier
 if __name__ == '__main__':
     servoNames = {}
     servoNames[0] = "Pulse_0"
@@ -34,7 +36,7 @@ if __name__ == '__main__':
     ppst = {}
     
     for i in range(numServos):
-        ppst[i] = pivotpi_servo.PivotPIServoThread(servoNames[i], ppi, ppilock, i, minPos[i], maxPos[i], pauseAtMin[i], pauseAtMax[i])
+        ppst[i] = pivotpi_servo.PivotPIServoThread(servoNames[i], ppi, ppilock, cb, i, minPos[i], maxPos[i], pauseAtMin[i], pauseAtMax[i])
         ppst[i].start()
     np = eval( input("Input any integer to terminate:  ") )
     

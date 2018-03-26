@@ -5,7 +5,7 @@ import pivotpi_logger
 class PivotPIServoThread(threading.Thread):
     '''Servo Thread for Pivot Pi.'''
 
-    def __init__(self, servoName, ppi, ppilock, channel, minPos, maxPos, pauseAtMin, pauseAtMax):
+    def __init__(self, servoName, ppi, ppilock, cyclicBarrier, channel, minPos, maxPos, pauseAtMin, pauseAtMax):
         '''
         Construct a PivotPIServoThread
         
@@ -25,6 +25,7 @@ class PivotPIServoThread(threading.Thread):
         self._nm = servoName
         self._ppi = ppi
         self._ppilock = ppilock
+        self._cb = cyclicBarrier
         self._c = int(channel)
         self._minP = int(minPos)
         self._maxP = int(maxPos)
