@@ -9,7 +9,7 @@ import threading
 import pivotpi_servo
 import pivotpi
 
-
+numServos = 2
 if __name__ == '__main__':
     servoNames = {}
     servoNames[0] = "Pulse_0"
@@ -33,15 +33,15 @@ if __name__ == '__main__':
     
     ppst = {}
     
-    for i in range(2):
+    for i in range(numServos):
         ppst[i] = pivotpi_servo.PivotPIServoThread(servoNames[i], ppi, ppilock, i, minPos[i], maxPos[i], pauseAtMin[i], pauseAtMax[i])
         ppst[i].start()
     np = eval( input("Input any integer to terminate:  ") )
     
-    for i in range(2):
+    for i in range(numServos):
         ppst[i].stopServo()
     
-    for i in range(2):
+    for i in range(numServos):
         ppst[i].join()
     
     print("DONE")
