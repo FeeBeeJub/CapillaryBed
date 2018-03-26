@@ -19,7 +19,7 @@ if __name__ == '__main__':
     minPos[1] = 0
     maxPos = {}
     maxPos[0] = 120
-    maxPos[2] = 120
+    maxPos[1] = 120
     
     ppi = pivotpi.PivotPi(addr = 0x40, actual_frequency = 60)
     ppilock = threading.Lock()
