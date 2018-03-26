@@ -26,4 +26,6 @@ if __name__ == '__main__':
     
     ppst.stopServo()
     
+    ppst.join()
+    
     print("DONE")
