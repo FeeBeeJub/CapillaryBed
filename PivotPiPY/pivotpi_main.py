@@ -16,8 +16,8 @@ if __name__ == '__main__':
     channel = 0
     minPos = 20
     maxPos = 160
-    pauseAtMin = 1
-    pauseAtMax = 2
+    pauseAtMin = 0.5
+    pauseAtMax = 0.5
     ppst = pivotpi_servo.PivotPIServoThread(servoName, ppi, ppilock, channel, minPos, maxPos, pauseAtMin, pauseAtMax)
     
     ppst.start()
@@ -25,5 +25,7 @@ if __name__ == '__main__':
     np = eval( input("Input any integer to terminate:  ") )
     
     ppst.stopServo()
+    
+    ppst.join()
     
     print("DONE")
