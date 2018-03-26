@@ -35,12 +35,15 @@ if __name__ == '__main__':
     
     for i in range(2):
         ppst[i] = pivotpi_servo.PivotPIServoThread(servoNames[i], ppi, ppilock, i, minPos[i], maxPos[i], pauseAtMin[i], pauseAtMax[i])
-    ppst[i].start()
-    
+        ppst[i].start()
     np = eval( input("Input any integer to terminate:  ") )
     
-    ppst.stopServo()
+    for i in range(2):
+        ppst[i].stopServo()
     
-    ppst.join()
+    for i in range(2):
+        ppst[i].join()
     
     print("DONE")
+    
+    
