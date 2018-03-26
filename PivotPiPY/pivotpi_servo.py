@@ -56,16 +56,16 @@ class PivotPIServoThread(threading.Thread):
         self._ppi.led(papMap['channel'], 0)
         self._ppi.angle(papMap['channel'], papMap['min'])
         self._lgr.logDebugMessage("MIN:  %d     Channel:  %d" % (papMap['min'], papMap['channel']))
-        time.sleep(papMap['pauseAtMin'])
         self._ppilock.release()
+        time.sleep(papMap['pauseAtMin'])
     def maxPos(self):
         papMap = self.getPositionsAndPauses()
         self._ppilock.acquire()
         self._ppi.led(papMap['channel'], 100)
         self._ppi.angle(papMap['channel'], papMap['max'])
         self._lgr.logDebugMessage("MAX:  %d     Channel:  %d" % (papMap['max'], papMap['channel']))
-        time.sleep(papMap['pauseAtMax'])
         self._ppilock.release()
+        time.sleep(papMap['pauseAtMax'])
     def setPositionsAndPauses(self, channel, minPos, maxPos, pauseAtMin, pauseAtMax):
         if not PivotPIServoThread.validateParams(channel, minPos, maxPos, pauseAtMin, pauseAtMax):
             print("Invalid Parameters")
