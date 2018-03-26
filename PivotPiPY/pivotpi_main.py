@@ -11,7 +11,7 @@ import pivotpi
 import cyclic_barrier
 
 numServos = 2
-cb = cyclic_barrier
+cb = cyclic_barrier.CyclicBarrier(numServos)
 if __name__ == '__main__':
     servoNames = {}
     servoNames[0] = "Pulse_0"

@@ -88,6 +88,8 @@ class PivotPIServoThread(threading.Thread):
         return ret
     def run(self):
         while self._continue:
+            self._cb.await()
             self.minPos()
+            self._cb.await()
             self.maxPos()
         
