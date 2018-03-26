@@ -95,4 +95,5 @@ class PivotPIServoThread(threading.Thread):
                 break
             self._cb.await()
             self.maxPos()
+        self.minPos()
         
