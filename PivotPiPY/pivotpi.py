@@ -1,9 +1,3 @@
-'''
-Created on Mar 22, 2018
-
-@author: rob
-'''
-
 import logging
 import pivotpi_logger
 

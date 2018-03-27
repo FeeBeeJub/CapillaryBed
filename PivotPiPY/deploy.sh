@@ -1,10 +1,11 @@
 #! /bin/bash
 
-targetMachines=(pulse000)
+targetMachines=(slave002)
 deployFiles=(pivotpi_logger.py
              pivotpi_main.py
              cyclic_barrier.py
-             pivotpi_servo.py)
+             pivotpi_servo.py
+             merge_logs.sh)
 
 SOURCE_PATH=${HOME}/git/Pivot-Pi-Simple/PivotPiPY
 TARGET_PATH=/home/pi/PivotPi

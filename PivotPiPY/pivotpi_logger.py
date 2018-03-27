@@ -1,9 +1,3 @@
-'''
-Created on Mar 22, 2018
-
-@author: rob
-'''
-
 import os
 import logging
 import threading
@@ -28,6 +22,7 @@ class PPILogger(object):
         self._logDirectory = self.createLogsDirIfNotExists()
         self._logFileAbsolutePath = "%s%s%s" % (self._logDirectory, os.sep, self._logFileName)
         self._logLevel = logLevel
+        self._fh = None
         self._logger = self.getFileLogger()
     @staticmethod
     def createLogsDirIfNotExists():
@@ -40,14 +35,18 @@ class PPILogger(object):
         return ret
     def getFileLogger(self):
         '''Gets a logger for current thread.'''
-        ret = logging.getLogger("%s_%s" % (__name__, threading.current_thread().name))
+        ret = logging.getLogger("%s_%s_%s" % (__name__, self._logFileName, threading.current_thread().name))
         ret.setLevel(self._logLevel)
-        lgrFH = logging.FileHandler(self.logFileAbsolutePath())
-        lgrFH.setLevel(self._logLevel)
+        self._fh = logging.FileHandler(self.logFileAbsolutePath())
+        self._fh.setLevel(self._logLevel)
         lgrFmtr = logging.Formatter('%(asctime)s - %(message)s')
-        lgrFH.setFormatter(lgrFmtr)
-        ret.addHandler(lgrFH)
+        self._fh.setFormatter(lgrFmtr)
+        ret.addHandler(self._fh)
         return ret
+    def finalizeLogger(self):
+        if self._logger and self._fh:
+            self._fh.flush()
+            self._logger.removeHandler(self._fh)
     def logDebugMessage(self, msg):
         '''Write Debug Message.'''
         self._logger.debug("%s:  %s" % (threading.current_thread().name, msg))

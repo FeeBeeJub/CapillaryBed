@@ -1,11 +1,13 @@
 import time
+import sys
 import threading
 import pivotpi_logger
+import cyclic_barrier
 
 class PivotPIServoThread(threading.Thread):
     '''Servo Thread for Pivot Pi.'''
 
-    def __init__(self, servoName, ppi, ppilock, cyclicBarrier, channel, minPos, maxPos, pauseAtMin, pauseAtMax):
+    def __init__(self, servoName, ppi, ppilock, stopLock, minPosCB, maxPosCB, channel, minPos, maxPos, pauseBeforeMin, pauseBeforeMax, logFlag=False):
         '''
         Construct a PivotPIServoThread
         
@@ -16,26 +18,28 @@ class PivotPIServoThread(threading.Thread):
         channel -- The channel of the servo (0 - 7)
         minPos -- The minimum angle of the servo, between 0 and maxPos
         maxPos -- The maximum angle of the servo, between minPos and 180
-        pauseAtMin -- The length of time (in seconds) to dwell at the minimum angle
-        pauseAtMax -- The length of time (in seconds) to dwell at the maximum angle
+        pauseBeforeMin -- The length of time (in seconds) to dwell before servo is set to minimum angle
+        pauseBeforeMax -- The length of time (in seconds) to dwell before servo is set to maximum angle
         '''
         super().__init__(name=servoName)
-        if not PivotPIServoThread.validateParams(channel, minPos, maxPos, pauseAtMin, pauseAtMax):
+        if not PivotPIServoThread.validateParams(channel, minPos, maxPos, pauseBeforeMin, pauseBeforeMax):
             raise ValueError("Invalid Parameters for Servo = %s" % servoName)
-        self._nm = servoName
         self._ppi = ppi
         self._ppilock = ppilock
-        self._cb = cyclicBarrier
+        self._sl = stopLock
+        self._minPosCB = minPosCB
+        self._maxPosCB = maxPosCB
         self._c = int(channel)
         self._minP = int(minPos)
         self._maxP = int(maxPos)
-        self._paMin = max(0.0, float(pauseAtMin))
-        self._paMax = max(0.0, float(pauseAtMax))
+        self._pbMin = max(0.0, float(pauseBeforeMin))
+        self._pbMax = max(0.0, float(pauseBeforeMax))
         self._continue = True
-        self._lgr = pivotpi_logger.PPILogger("%s.log" % servoName)
+        self._logFlag = logFlag
+        self._lgr = None
         self._paramLock = threading.Lock()
     @staticmethod
-    def validateParams(channel, minPos, maxPos, pauseAtMin, pauseAtMax):
+    def validateParams(channel, minPos, maxPos, pauseBeforeMin, pauseBeforeMax):
         ret = True
         if int(channel) < 0 or int(channel) > 7:
             print("Invalid Channel:  %d" % channel)
@@ -43,57 +47,80 @@ class PivotPIServoThread(threading.Thread):
         if int(minPos) < 0 or int(maxPos) > 180 or int(minPos) > int(maxPos):
             print("Invalid minPos = %d and/or maxPos = %d" % (minPos, maxPos))
             ret = False
-        if float(pauseAtMin) < 0.0 or float(pauseAtMax) < 0.0:
-            print("Invalid pauseAtMin = %.2f and/or pauseAtMax = %.2f" % (pauseAtMin, pauseAtMax))
+        if float(pauseBeforeMin) < 0.0 or float(pauseBeforeMax) < 0.0:
+            print("Invalid pauseBeforeMin = %.2f and/or pauseBeforeMax = %.2f" % (pauseBeforeMin, pauseBeforeMax))
             ret = False
         return ret
+    def initThread(self):
+        self._lgr = None if not self._logFlag else pivotpi_logger.PPILogger("%s.log" % self.name)
+    def finalizeThread(self):
+        self.doLogging("Finalizing")
+        self._minPos(self.getPositionsAndPauses())
+        if self._logFlag:
+            self._lgr.finalizeLogger()
+    def doLogging(self, msg):
+        if self._logFlag:
+            self._lgr.logDebugMessage(msg)
     def stopServo(self):
-        self._continue = False
-        self._cb.flush()
+        with self._sl:
+            self._continue = False
+            self._minPosCB.breakAndFlush()
+            self._maxPosCB.breakAndFlush()
+    def continueFlag(self):
+        with self._sl:
+            return self._continue
+    def _minPos(self, papMap):
+        with self._ppilock:
+            self._ppi.led(papMap['channel'], 0)
+            self._ppi.angle(papMap['channel'], papMap['min'])
+        self.doLogging("MIN:  %d     Channel:  %d" % (papMap['min'], papMap['channel']))
+    def _maxPos(self, papMap):
+        with self._ppilock:
+            self._ppi.led(papMap['channel'], 100)
+            self._ppi.angle(papMap['channel'], papMap['max'])
+        self.doLogging("MAX:  %d     Channel:  %d" % (papMap['max'], papMap['channel']))
     def minPos(self):
         papMap = self.getPositionsAndPauses()
-        self._ppilock.acquire()
-        self._ppi.led(papMap['channel'], 0)
-        self._ppi.angle(papMap['channel'], papMap['min'])
-        self._lgr.logDebugMessage("MIN:  %d     Channel:  %d" % (papMap['min'], papMap['channel']))
-        self._ppilock.release()
-        time.sleep(papMap['pauseAtMin'])
+        time.sleep(papMap['pauseBeforeMin'])
+        self._minPos(papMap)
+        time.sleep(0.1)
     def maxPos(self):
         papMap = self.getPositionsAndPauses()
-        self._ppilock.acquire()
-        self._ppi.led(papMap['channel'], 100)
-        self._ppi.angle(papMap['channel'], papMap['max'])
-        self._lgr.logDebugMessage("MAX:  %d     Channel:  %d" % (papMap['max'], papMap['channel']))
-        self._ppilock.release()
-        time.sleep(papMap['pauseAtMax'])
-    def setPositionsAndPauses(self, channel, minPos, maxPos, pauseAtMin, pauseAtMax):
-        if not PivotPIServoThread.validateParams(channel, minPos, maxPos, pauseAtMin, pauseAtMax):
+        time.sleep(papMap['pauseBeforeMax'])
+        self._maxPos(papMap)
+        time.sleep(0.1)
+    def setPositionsAndPauses(self, channel, minPos, maxPos, pauseBeforeMin, pauseBeforeMax):
+        if not PivotPIServoThread.validateParams(channel, minPos, maxPos, pauseBeforeMin, pauseBeforeMax):
             print("Invalid Parameters")
         else:
-            self._paramLock.acquire()
-            self._c = int(channel)
-            self._minP = int(minPos)
-            self._maxP = int(maxPos)
-            self._paMin = max(0.0, float(pauseAtMin))
-            self._paMax = max(0.0, float(pauseAtMax))
-            self._paramLock.release()
+            with self._paramLock:
+                self._c = int(channel)
+                self._minP = int(minPos)
+                self._maxP = int(maxPos)
+                self._pbMin = max(0.0, float(pauseBeforeMin))
+                self._pbMax = max(0.0, float(pauseBeforeMax))
     def getPositionsAndPauses(self):
         ret = {}
-        self._paramLock.acquire()
-        ret['channel'] = self._c
-        ret['min'] = self._minP
-        ret['max'] = self._maxP
-        ret['pauseAtMin'] = self._paMin
-        ret['pauseAtMax'] = self._paMax
-        self._paramLock.release()
+        with self._paramLock:
+            ret['channel'] = self._c
+            ret['min'] = self._minP
+            ret['max'] = self._maxP
+            ret['pauseBeforeMin'] = self._pbMin
+            ret['pauseBeforeMax'] = self._pbMax
         return ret
     def run(self):
-        while self._continue:
-            self._cb.await()
-            self.minPos()
-            if not self._continue:   
-                break
-            self._cb.await()
-            self.maxPos()
-        self.minPos()
+        self.initThread()
+        try:
+            while self.continueFlag():
+                self._minPosCB.await()
+                self.minPos()
+                self._maxPosCB.await()
+                self.maxPos()
+        except cyclic_barrier.BrokenBarrierException:
+            self.doLogging("Broken Barrier Exception Caught, this is OK") # This is OK, we expect the barrier to be broken at end of thread execution
+        except:
+            self.doLogging("Unexpected error:  %s" % sys.exc_info()[0])
+            print("Unexpected error:  %s" % sys.exc_info()[0])
+        finally:
+            self.finalizeThread()
         
