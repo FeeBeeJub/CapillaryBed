@@ -43,10 +43,6 @@ class CyclicBarrier(object):
                 if self._broken:
                     self._c.notify_all()
                     raise BrokenBarrierException
-
-    def flush(self):
-        with self._c:
-            self._c.notify_all()
     def breakAndFlush(self):
         with self._c:
             self._broken = True
