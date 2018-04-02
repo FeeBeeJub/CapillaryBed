@@ -20,22 +20,27 @@ if __name__ == '__main__':
     servoNames = {}
     servoNames[0] = "Pulse_0"
     servoNames[1] = "Pulse_1"
+    servoNames[2] = "Pulse_2"
     
     minPos = {}
     minPos[0] = 0
     minPos[1] = 0
+    minPos[2] = 0
     
     maxPos = {}
     maxPos[0] = 120
     maxPos[1] = 120
+    maxPos[2] = 180
     
     pauseBeforeMin = {}
     pauseBeforeMin[0] = 0.5
     pauseBeforeMin[1] = 0.5
+    pauseBeforeMin[2] = 0.5
     
     pauseBeforeMax = {}
-    pauseBeforeMax[0] = 0.2
+    pauseBeforeMax[0] = 0.5
     pauseBeforeMax[1] = 0.5
+    pauseBeforeMax[2] = 0.5
     
     ppst = {}
     

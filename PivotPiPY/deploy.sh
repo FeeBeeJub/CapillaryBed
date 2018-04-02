@@ -1,6 +1,6 @@
 #! /bin/bash
 
-targetMachines=(slave002)
+targetMachines=(pulse000)
 deployFiles=(pivotpi_logger.py
              pivotpi_main.py
              cyclic_barrier.py
